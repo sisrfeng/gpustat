@@ -5,6 +5,10 @@
 [![Build Status](https://travis-ci.org/wookayin/gpustat.svg?branch=master)](https://travis-ci.org/wookayin/gpustat)
 [![license](https://img.shields.io/github/license/wookayin/gpustat.svg?maxAge=86400)](LICENSE)
 
+forked from   wookayin/gpustat  
+Main function: `gpu_stats` in main.py  call `print_formatted(sys.stdout, **kwargs)` in core.py
+
+
 Just *less* than nvidia-smi?
 
 ![Screenshot: gpustat -cp](screenshot.png)
