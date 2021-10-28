@@ -2,11 +2,11 @@
 The gpustat module.
 """
 
-__version__ = '1.0.0.dev1'
+__version__ = '0.6.0'
 
 from .core import GPUStat, GPUStatCollection
 from .core import new_query
-from .cli import print_gpustat, main
+from .__main__ import print_gpustat, main
 
 
 __all__ = (

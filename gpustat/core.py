@@ -11,28 +11,23 @@ Implementation of gpustat
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from __future__ import unicode_literals
 
 import json
 import locale
 import os.path
 import platform
 import sys
-import time
 from datetime import datetime
 
 from six.moves import cStringIO as StringIO
+
 import psutil
 import pynvml as N
-from blessed import Terminal
-
-import gpustat.util as util
-
+from blessings import Terminal
 
 NOT_SUPPORTED = 'Not Supported'
 MB = 1024 * 1024
-
-IS_WINDOWS = 'windows' in platform.platform().lower()
+GB = 1024 * 1024*1024
 
 
 class GPUStat(object):
@@ -78,21 +73,21 @@ class GPUStat(object):
     @property
     def memory_total(self):
         """
-        Returns the total memory (in MB) as an integer.
+        Returns the total memory (in GB) as an integer.
         """
         return int(self.entry['memory.total'])
 
     @property
     def memory_used(self):
         """
-        Returns the occupied memory (in MB) as an integer.
+        Returns the occupied memory (in GB) as an integer.
         """
         return int(self.entry['memory.used'])
 
     @property
     def memory_free(self):
         """
-        Returns the free (available) memory (in MB) as an integer.
+        Returns the free (available) memory (in GB) as an integer.
         """
         v = self.memory_total - self.memory_used
         return max(v, 0)
@@ -100,7 +95,7 @@ class GPUStat(object):
     @property
     def memory_available(self):
         """
-        Returns the available memory (in MB) as an integer.
+        Returns the available memory (in GB) as an integer.
         Alias of memory_free.
         """
         return self.memory_free
@@ -133,24 +128,6 @@ class GPUStat(object):
         return int(v) if v is not None else None
 
     @property
-    def utilization_enc(self):
-        """
-        Returns the GPU encoder utilization (in percentile),
-        or None if the information is not available.
-        """
-        v = self.entry['utilization.enc']
-        return int(v) if v is not None else None
-
-    @property
-    def utilization_dec(self):
-        """
-        Returns the GPU decoder utilization (in percentile),
-        or None if the information is not available.
-        """
-        v = self.entry['utilization.dec']
-        return int(v) if v is not None else None
-
-    @property
     def power_draw(self):
         """
         Returns the GPU power usage in Watts,
@@ -178,18 +155,14 @@ class GPUStat(object):
     def print_to(self, fp,
                  with_colors=True,    # deprecated arg
                  show_cmd=False,
-                 show_full_cmd=False,
                  show_user=False,
+                 your_name='',
                  show_pid=False,
-                 show_fan_speed=None,
-                 show_codec="",
                  show_power=None,
+                 show_fan_speed=None,
                  gpuname_width=16,
-                 term=None,
+                 term=Terminal(),
                  ):
-        if term is None:
-            term = Terminal(stream=sys.stdout)
-
         # color settings
         colors = {}
 
@@ -200,11 +173,8 @@ class GPUStat(object):
             except Exception:
                 return error_value
 
-        _ENC_THRESHOLD = 50
-
         colors['C0'] = term.normal
         colors['C1'] = term.cyan
-        colors['CBold'] = term.bold
         colors['CName'] = term.blue
         colors['CTemp'] = _conditional(lambda: self.temperature < 50,
                                        term.red, term.bold_red)
@@ -213,24 +183,14 @@ class GPUStat(object):
         colors['CMemU'] = term.bold_yellow
         colors['CMemT'] = term.yellow
         colors['CMemP'] = term.yellow
-        colors['CCPUMemU'] = term.yellow
         colors['CUser'] = term.bold_black   # gray
         colors['CUtil'] = _conditional(lambda: self.utilization < 30,
                                        term.green, term.bold_green)
-        colors['CUtilEnc'] = _conditional(
-            lambda: self.utilization_enc < _ENC_THRESHOLD,
-            term.green, term.bold_green)
-        colors['CUtilDec'] = _conditional(
-            lambda: self.utilization_dec < _ENC_THRESHOLD,
-            term.green, term.bold_green)
-        colors['CCPUUtil'] = term.green
         colors['CPowU'] = _conditional(
-            lambda: (self.power_limit is not None and
-                     float(self.power_draw) / self.power_limit < 0.4),
+            lambda: float(self.power_draw) / self.power_limit < 0.4,
             term.magenta, term.bold_magenta
         )
         colors['CPowL'] = term.magenta
-        colors['CCmd'] = term.color(24)   # a bit dark
 
         if not with_colors:
             for k in list(colors.keys()):
@@ -242,25 +202,16 @@ class GPUStat(object):
         # build one-line display information
         # we want power use optional, but if deserves being grouped with
         # temperature and utilization
-        reps = u"%(C1)s[{entry[index]}]%(C0)s " \
-            "%(CName)s{entry[name]:{gpuname_width}}%(C0)s |" \
-            "%(CTemp)s{entry[temperature.gpu]:>3}°C%(C0)s, "
+        reps = "%(C1)s[{entry[index]}]%(C0)s"
+        #  reps = "%(C1)s[{entry[index]}]%(C0)s " \
+        #      "%(CName)s{entry[name]:{gpuname_width}}%(C0)s |" \
+        #      "%(CTemp)s{entry[temperature.gpu]:>3}'C%(C0)s, "
+
 
         if show_fan_speed:
             reps += "%(FSpeed)s{entry[fan.speed]:>3} %%%(C0)s, "
 
-        reps += "%(CUtil)s{entry[utilization.gpu]:>3} %%%(C0)s"
-        if show_codec:
-            codec_info = []
-            if "enc" in show_codec:
-                codec_info.append(
-                    "%(CBold)sE: %(C0)s"
-                    "%(CUtilEnc)s{entry[utilization.enc]:>3} %%%(C0)s")
-            if "dec" in show_codec:
-                codec_info.append(
-                    "%(CBold)sD: %(C0)s"
-                    "%(CUtilDec)s{entry[utilization.dec]:>3} %%%(C0)s")
-            reps += " ({})".format("  ".join(codec_info))
+        #  reps += "%(CUtil)s{entry[utilization.gpu]:>3} %%%(C0)s"
 
         if show_power:
             reps += ",  %(CPowU)s{entry[power.draw]:>3}%(C0)s "
@@ -270,76 +221,58 @@ class GPUStat(object):
             else:
                 reps += "%(CPowU)sW%(C0)s"
 
-        reps += " | %(C1)s%(CMemU)s{entry[memory.used]:>5}%(C0)s " \
-            "/ %(CMemT)s{entry[memory.total]:>5}%(C0)s MB"
+        #reps += " | %(C1)s%(CMemU)s{entry[memory.used]:>5}%(C0)s " \
+            #  "/ %(CMemT)s{entry[memory.total]:>5}%(C0)s "
+        reps += "%(C1)s%(CMemU)s{entry[memory.free]:>5}%(C0)s G" 
         reps = (reps) % colors
-        reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()},
+        reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()}, 
                            gpuname_width=gpuname_width)
-        reps += " |"
-
+        reps += "::"
         def process_repr(p):
             r = ''
+
             if not show_cmd or show_user:
-                r += "{CUser}{}{C0}".format(
-                    _repr(p['username'], '--'), **colors
-                )
+                r += "{CUser}{:3s}:{C0}".format( _repr(p['username'], '--'), **colors
+                                                )
             if show_cmd:
                 if r:
                     r += ':'
-                r += "{C1}{}{C0}".format(
-                    _repr(p.get('command', p['pid']), '--'), **colors
-                )
+                r += "{C1}{}{C0}".format( _repr(p.get('command', p['pid']), '--'), **colors)
 
             if show_pid:
-                r += ("/%s" % _repr(p['pid'], '--'))
-            r += '({CMemP}{}M{C0})'.format(
-                _repr(p['gpu_memory_usage'], '?'), **colors
-            )
-            return r
+                r += ("[%s]" % _repr(p['pid'], '--'))
 
-        def full_process_info(p):
-            r = "{C0} ├─ {:>6} ".format(
-                    _repr(p['pid'], '--'), **colors
-                )
-            r += "{C0}({CCPUUtil}{:4.0f}%{C0}, {CCPUMemU}{:>6}{C0})".format(
-                    _repr(p['cpu_percent'], '--'),
-                    util.bytes2human(_repr(p['cpu_memory_usage'], 0)), **colors
-                )
-            full_command_pretty = util.prettify_commandline(
-                p['full_command'], colors['C1'], colors['CCmd'])
-            r += "{C0}: {CCmd}{}{C0}".format(
-                _repr(full_command_pretty, '?'),
-                **colors
-            )
+            r += '{CMemP}{:5.2f}G{C0}'.format( _repr(p['gpu_memory_usage'], '?'), **colors)
             return r
 
         processes = self.entry['processes']
-        full_processes = []
         if processes is None:
             # None (not available)
             reps += ' ({})'.format(NOT_SUPPORTED)
         else:
-            for p in processes:
-                reps += ' ' + process_repr(p)
-                if show_full_cmd:
-                    full_processes.append(os.linesep + full_process_info(p))
-        if show_full_cmd and full_processes:
-            full_processes[-1] = full_processes[-1].replace('├', '└', 1)
-            reps += ''.join(full_processes)
+            if your_name == '':
+                for p in processes:
+                    reps +=  process_repr(p) + '| '
+            if your_name != '':
+                for p in processes:
+                    #only show process of user 'YOUR_NAME'
+                    if _repr(p['username'], '--') == your_name:
+                        reps +=  process_repr(p) + '| '
+
         fp.write(reps)
         return fp
 
     def jsonify(self):
-        o = self.entry.copy()
+        o = dict(self.entry)
         if self.entry['processes'] is not None:
             o['processes'] = [{k: v for (k, v) in p.items() if k != 'gpu_uuid'}
                               for p in self.entry['processes']]
+        else:
+            o['processes'] = '({})'.format(NOT_SUPPORTED)
         return o
 
 
 class GPUStatCollection(object):
-
-    global_processes = {}
 
     def __init__(self, gpu_list, driver_version=None):
         self.gpus = gpu_list
@@ -350,12 +283,6 @@ class GPUStatCollection(object):
         self.driver_version = driver_version
 
     @staticmethod
-    def clean_processes():
-        for pid in list(GPUStatCollection.global_processes.keys()):
-            if not psutil.pid_exists(pid):
-                del GPUStatCollection.global_processes[pid]
-
-    @staticmethod
     def new_query():
         """Query the information of all the GPUs on local machine"""
 
@@ -363,7 +290,7 @@ class GPUStatCollection(object):
 
         def _decode(b):
             if isinstance(b, bytes):
-                return b.decode('utf-8')    # for python3, to unicode
+                return b.decode()    # for python3, to unicode
             return b
 
         def get_gpu_info(handle):
@@ -372,32 +299,18 @@ class GPUStatCollection(object):
             def get_process_info(nv_process):
                 """Get the process information of specific pid"""
                 process = {}
-                if nv_process.pid not in GPUStatCollection.global_processes:
-                    GPUStatCollection.global_processes[nv_process.pid] = \
-                        psutil.Process(pid=nv_process.pid)
-                ps_process = GPUStatCollection.global_processes[nv_process.pid]
-
-                # TODO: ps_process is being cached, but the dict below is not.
+                ps_process = psutil.Process(pid=nv_process.pid)
                 process['username'] = ps_process.username()
                 # cmdline returns full path;
                 # as in `ps -o comm`, get short cmdnames.
                 _cmdline = ps_process.cmdline()
                 if not _cmdline:
                     # sometimes, zombie or unknown (e.g. [kworker/8:2H])
-                    process['command'] = '?'
-                    process['full_command'] = ['?']
+                    process['command'] = 'leo_you_found_a_zombie'
                 else:
                     process['command'] = os.path.basename(_cmdline[0])
-                    process['full_command'] = _cmdline
                 # Bytes to MBytes
-                # if drivers are not TTC this will be None.
-                usedmem = nv_process.usedGpuMemory // MB if \
-                          nv_process.usedGpuMemory else None
-                process['gpu_memory_usage'] = usedmem
-                process['cpu_percent'] = ps_process.cpu_percent()
-                process['cpu_memory_usage'] = \
-                    round((ps_process.memory_percent() / 100.0) *
-                          psutil.virtual_memory().total)
+                process['gpu_memory_usage'] = round(nv_process.usedGpuMemory/GB, 2)
                 process['pid'] = nv_process.pid
                 return process
 
@@ -427,16 +340,6 @@ class GPUStatCollection(object):
                 utilization = None  # Not supported
 
             try:
-                utilization_enc = N.nvmlDeviceGetEncoderUtilization(handle)
-            except N.NVMLError:
-                utilization_enc = None  # Not supported
-
-            try:
-                utilization_dec = N.nvmlDeviceGetDecoderUtilization(handle)
-            except N.NVMLError:
-                utilization_dec = None  # Not supported
-
-            try:
                 power = N.nvmlDeviceGetPowerUsage(handle)
             except N.NVMLError:
                 power = None
@@ -463,13 +366,9 @@ class GPUStatCollection(object):
                 processes = []
                 nv_comp_processes = nv_comp_processes or []
                 nv_graphics_processes = nv_graphics_processes or []
-                # A single process might run in both of graphics and compute mode,
-                # However we will display the process only once
-                seen_pids = set()
                 for nv_process in nv_comp_processes + nv_graphics_processes:
-                    if nv_process.pid in seen_pids:
-                        continue
-                    seen_pids.add(nv_process.pid)
+                    # TODO: could be more information such as system memory
+                    # usage, CPU percentage, create time etc.
                     try:
                         process = get_process_info(nv_process)
                         processes.append(process)
@@ -477,21 +376,6 @@ class GPUStatCollection(object):
                         # TODO: add some reminder for NVML broken context
                         # e.g. nvidia-smi reset  or  reboot the system
                         pass
-                    except FileNotFoundError:
-                        # Ignore the exception which probably has occured
-                        # from psutil, due to a non-existent PID (see #95).
-                        # The exception should have been translated, but
-                        # there appears to be a bug of psutil. It is unlikely
-                        # FileNotFoundError is thrown in different situations.
-                        pass
-
-
-                # TODO: Do not block if full process info is not requested
-                time.sleep(0.1)
-                for process in processes:
-                    pid = process['pid']
-                    cache_process = GPUStatCollection.global_processes[pid]
-                    process['cpu_percent'] = cache_process.cpu_percent()
 
             index = N.nvmlDeviceGetIndex(handle)
             gpu_info = {
@@ -501,19 +385,15 @@ class GPUStatCollection(object):
                 'temperature.gpu': temperature,
                 'fan.speed': fan_speed,
                 'utilization.gpu': utilization.gpu if utilization else None,
-                'utilization.enc':
-                    utilization_enc[0] if utilization_enc else None,
-                'utilization.dec':
-                    utilization_dec[0] if utilization_dec else None,
                 'power.draw': power // 1000 if power is not None else None,
-                'enforced.power.limit': power_limit // 1000
-                if power_limit is not None else None,
+                'enforced.power.limit': power_limit // 1000 if power_limit is not None else None,
                 # Convert bytes into MBytes
-                'memory.used': memory.used // MB if memory else None,
-                'memory.total': memory.total // MB if memory else None,
+                'memory.used': memory.used / GB if memory else None,
+                'memory.total': memory.total / GB if memory else None,
+                'memory.free': round(max(0,(memory.total - memory.used)) / GB, 1) if memory else None,
                 'processes': processes,
             }
-            GPUStatCollection.clean_processes()
+
             return gpu_info
 
         # 1. get the list of gpu and status
@@ -551,12 +431,12 @@ class GPUStatCollection(object):
         return s
 
     # --- Printing Functions ---
-
     def print_formatted(self, fp=sys.stdout, force_color=False, no_color=False,
-                        show_cmd=False, show_full_cmd=False, show_user=False,
-                        show_pid=False, show_fan_speed=None,
-                        show_codec="", show_power=None,
-                        gpuname_width=16, show_header=True,
+                        show_cmd=False, show_user=False,
+                        your_name='',
+                        show_pid=False,
+                        show_power=None, show_fan_speed=None, gpuname_width=16,
+                        show_header=True,
                         eol_char=os.linesep,
                         ):
         # ANSI color configuration
@@ -565,11 +445,10 @@ class GPUStatCollection(object):
                              " be used at the same time")
 
         if force_color:
-            TERM = os.getenv('TERM') or 'xterm-256color'
-            t_color = Terminal(kind=TERM, force_styling=True)
+            t_color = Terminal(kind='linux', force_styling=True)
 
             # workaround of issue #32 (watch doesn't recognize sgr0 characters)
-            t_color._normal = u'\x1b[0;10m'
+            t_color.normal = u'\x1b[0;10m'
         elif no_color:
             t_color = Terminal(force_styling=None)
         else:
@@ -581,13 +460,8 @@ class GPUStatCollection(object):
 
         # header
         if show_header:
-            if IS_WINDOWS:
-                # no localization is available; just use a reasonable default
-                # same as str(timestr) but without ms
-                timestr = self.query_time.strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                time_format = locale.nl_langinfo(locale.D_T_FMT)
-                timestr = self.query_time.strftime(time_format)
+            time_format = locale.nl_langinfo(locale.D_T_FMT)
+
             header_template = '{t.bold_white}{hostname:{width}}{t.normal}  '
             header_template += '{timestr}  '
             header_template += '{t.bold_black}{driver_version}{t.normal}'
@@ -595,7 +469,7 @@ class GPUStatCollection(object):
             header_msg = header_template.format(
                     hostname=self.hostname,
                     width=gpuname_width + 3,  # len("[?]")
-                    timestr=timestr,
+                    timestr=self.query_time.strftime(time_format),
                     driver_version=self.driver_version,
                     t=t_color,
                 )
@@ -603,16 +477,15 @@ class GPUStatCollection(object):
             fp.write(header_msg.strip())
             fp.write(eol_char)
 
-        # body
+        # body  某快gpu是一个g
         for g in self:
             g.print_to(fp,
                        show_cmd=show_cmd,
-                       show_full_cmd=show_full_cmd,
                        show_user=show_user,
+                       your_name=your_name,
                        show_pid=show_pid,
-                       show_fan_speed=show_fan_speed,
-                       show_codec=show_codec,
                        show_power=show_power,
+                       show_fan_speed=show_fan_speed,
                        gpuname_width=gpuname_width,
                        term=t_color)
             fp.write(eol_char)
@@ -636,7 +509,7 @@ class GPUStatCollection(object):
         o = self.jsonify()
         json.dump(o, fp, indent=4, separators=(',', ': '),
                   default=date_handler)
-        fp.write(os.linesep)
+        fp.write('\n')
         fp.flush()
 
 
