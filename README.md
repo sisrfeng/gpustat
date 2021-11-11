@@ -23,12 +23,13 @@ def find_gpus(num_of_cards_needed=4):
     usingGPUs = [str(idx_memory_pair[0]) for idx_memory_pair in
                     idx_freeMemory_pair[:num_of_cards_needed] ]
     usingGPUs = ','.join(usingGPUs)
-    print('using GPUs:')
+    print('using GPUs:',end=' ')
     for pair in idx_freeMemory_pair[:num_of_cards_needed]:
-        print(f'{pair[0]}号卡，此前空闲：{pair[1]/1024:.1f}GB')
+        print(f'{pair[0]}号，此前空闲：{pair[1]/1024:.1f}GB')
     return usingGPUs
 
-os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus(num_of_cards_needed=1)  # must before `import torch`         
+os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus(num_of_cards_needed=1)  # must before `import torch`
+
 ```
    
       
