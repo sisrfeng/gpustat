@@ -5,7 +5,7 @@ I just modified the two files above.
 
 * My version V.S. original version:
 
-![image](https://user-images.githubusercontent.com/53520949/139263436-26469817-24dd-40b5-8e3f-ba41cdfc80be.png)
+
 
 # Find the GPU you want automatically
 Another GPU trick  (not relevant to `gpustat`, I just put the snippet here)
@@ -33,14 +33,6 @@ os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus(num_of_cards_needed=1)  # must be
 ```
    
       
-         
-
-
-
-\  
-\  
-\   
-
 
 # Original README.md  
 
