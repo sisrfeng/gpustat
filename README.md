@@ -3,7 +3,7 @@
 * The code is not quite complex: `gpu_stats` in main.py  call `print_formatted(sys.stdout, **kwargs)` in core.py.  
 I just modified the two files above.
 
-* My version V.S. original version:
+
 
 
 
