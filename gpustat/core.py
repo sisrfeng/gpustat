@@ -228,12 +228,15 @@ class GPUStat(object):
         reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()},
                            gpuname_width=gpuname_width)
         reps += " | "
-        def process_repr(p):
+        def process_repr(p):  #  这是个递归函数
             r = ''
 
             if not show_cmd or show_user:
-                r += "{CUser}{:3s}:{C0}".format( _repr(p['username'], '--'), **colors
-                                                )
+                r += "{CUser}{:8s}:{C0}".format( _repr(p['username'], '--'), **colors )
+                              #  s前的数字: 字符串长度, 小于这个数就补空格
+                              #  太小的话, 行与行之间容易对不齐
+                              #  有的用户名:xxx2019,  7位
+                              #  todo: 让这个数字 取出现的用户名的最大长度
             if show_cmd:
                 if r:
                     r += ':'
@@ -252,7 +255,7 @@ class GPUStat(object):
         else:
             if your_name == '':
                 for p in processes:
-                    reps +=  process_repr(p) + ' , '
+                    reps +=  process_repr(p) + ' | '
             if your_name != '':
                 for p in processes:
                     #only show process of user 'YOUR_NAME'
@@ -477,7 +480,7 @@ class GPUStatCollection(object):
             fp.write(header_msg.strip())
             fp.write(eol_char)
 
-        # body  某快gpu是一个g
+        # body  某gpu是一个g
         for g in self:
             g.print_to(fp,
                        show_cmd=show_cmd,
