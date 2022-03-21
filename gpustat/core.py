@@ -223,9 +223,9 @@ class GPUStat(object):
 
         #reps += " | %(C1)s%(CMemU)s{entry[memory.used]:>5}%(C0)s " \
             #  "/ %(CMemT)s{entry[memory.total]:>5}%(C0)s "
-        reps += "%(C1)s%(CMemU)s{entry[memory.free]:>5}%(C0)s G" 
+        reps += "%(C1)s%(CMemU)s{entry[memory.free]:>5}%(C0)s G"
         reps = (reps) % colors
-        reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()}, 
+        reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()},
                            gpuname_width=gpuname_width)
         reps += "::"
         def process_repr(p):
@@ -257,7 +257,7 @@ class GPUStat(object):
                 for p in processes:
                     #only show process of user 'YOUR_NAME'
                     if _repr(p['username'], '--') == your_name:
-                        reps +=  process_repr(p) + '| '
+                        reps += '| ' + process_repr(p)
 
         fp.write(reps)
         return fp
