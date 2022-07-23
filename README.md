@@ -1,10 +1,8 @@
 # Install:
 
-```python -m pip install git+https://github.com/sisrfeng/gpustat```
-(ref: https://adamj.eu/tech/2019/03/11/pip-install-from-a-git-repository/)
+```python -m pip install git+https://github.com/sisrfeng/n_gpu```  
 
-
-* forked from   wookayin/gpustat  (v0.6)  (The original repo' s version is higher now, but I have no time to follow up)  
+* forked from   wookayin/gpustat  (v0.6)  (The original repo' s version is higher now, but I'm quite satisfied with this version.)  
 
 * The code is not quite complex: `gpu_stats` in main.py  call `print_formatted(sys.stdout, **kwargs)` in core.py.  
 I just modified the two files above.
