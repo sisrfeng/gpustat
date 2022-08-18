@@ -13,7 +13,7 @@ I just modified the two files above.
 
 
 
-# Find the GPU you want automatically
+# Automatically Find the GPUs with Most MEM Available 
 Another GPU trick  (not relevant to `gpustat`, I just put the snippet here)
 
 `source alias.zsh`  in your zshrc file, then type `p` in zsh instead of `python3`
