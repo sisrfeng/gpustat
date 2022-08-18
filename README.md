@@ -1,10 +1,12 @@
+n_gpu: number of available gpu / new gpu command, do not use the ugly nvidia-smi anymore.
+
 # Install
 
 ```python -m pip install git+https://github.com/sisrfeng/n_gpu```  
 
 * forked from   wookayin/gpustat  (v0.6)  (The original repo' s version is higher now, but I'm quite satisfied with this version.)  
 
-* The code is not quite complex: `gpu_stats` in main.py  call `print_formatted(sys.stdout, **kwargs)` in core.py.  
+* The code is not  complex: `gpu_stats` in main.py  call `print_formatted(sys.stdout, **kwargs)` in core.py.  
 I just modified the two files above.
 
 
@@ -13,28 +15,11 @@ I just modified the two files above.
 
 # Find the GPU you want automatically
 Another GPU trick  (not relevant to `gpustat`, I just put the snippet here)
-```python
-import os
-def find_gpus(num_of_cards_needed=4):
-    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >~/.tmp_free_gpus')
-    # If there is no ~ in the path, return the path unchanged
-    with open(os.path.expanduser ('~/.tmp_free_gpus'), 'r') as lines_txt:
-        frees = lines_txt.readlines()
-        idx_freeMemory_pair = [ (idx, int(x.split()[2]))
-                                for idx, x in enumerate(frees) ]
-    idx_freeMemory_pair.sort(reverse=True)  # 0号卡经常有人抢，让最后一张卡在下面的sort中优先
-    idx_freeMemory_pair.sort(key=lambda my_tuple: my_tuple[1], reverse=True)
-    usingGPUs = [str(idx_memory_pair[0]) for idx_memory_pair in
-                    idx_freeMemory_pair[:num_of_cards_needed] ]
-    usingGPUs = ','.join(usingGPUs)
-    print('using GPUs:',end=' ')
-    for pair in idx_freeMemory_pair[:num_of_cards_needed]:
-        print(f'{pair[0]}号，此前空闲：{pair[1]/1024:.1f}GB')
-    return usingGPUs
 
-os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus(num_of_cards_needed=1)  # must before `import torch`
+`source alias.zsh`  in your zshrc file, then type `p` in zsh instead of `python3`
 
-```
+See ./find_gpus.py and alias.zsh before you use them!   
+
    
       
 
