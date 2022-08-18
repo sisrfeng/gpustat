@@ -14,9 +14,12 @@ I just modified the two files above.
 
 
 # Automatically Find the GPUs with Most MEM Available 
-Another GPU trick  (not relevant to `gpustat`, I just put the snippet here)
 
-`source alias.zsh`  in your zshrc file, then type `p` in zsh instead of `python3`
+`nvidia-smi` then set `CUDA_VISIBLE_DEVICES` manually?  
+
+I have not typed these two for a long time.
+
+`source alias.zsh`  in your zshrc file, then type `p` in zsh instead of `python3` 
 
 See ./find_gpus.py and alias.zsh before you use them!   
 

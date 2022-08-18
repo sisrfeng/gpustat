@@ -1,3 +1,10 @@
+gp () {
+    echo '左侧是free Mem'
+    gpustat --show-user --no-header $* | bat --language=go
+    # using `go` is just for the beautiful color
+}
+
+
 ls_after_cd() {
     print ""
     # 放着, 方便搜索: auto_list_file_after_cd
