@@ -37,17 +37,9 @@ See ./find_gpus.py and alias.zsh before you use them!
 [![license](https://img.shields.io/github/license/wookayin/gpustat.svg?maxAge=86400)](LICENSE)
 
 
-
-Just *less* than nvidia-smi?
-
 ![Screenshot: gpustat -cp](screenshot.png)
 
-NOTE: This works with NVIDIA Graphics Devices only, no AMD support as of now. Contributions are welcome!
-
-Self-Promotion: A web interface of `gpustat` is available (in alpha)! Check out [gpustat-web][gpustat-web].
-
-[gpustat-web]: https://github.com/wookayin/gpustat-web
-
+no AMD support as of now
 
 Usage
 -----
