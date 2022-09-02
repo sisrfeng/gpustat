@@ -1,18 +1,13 @@
-#modified by wf
 
 # if 'importS':
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+    import sys
+    import time
 
-import sys
-import time
+    from blessings import Terminal
 
-from blessings import Terminal
-
-from gpustat import __version__
-from psutil import Process
-from .core import GPUStatCollection
+    from gpustat import __version__
+    from psutil import Process
+    from .core import GPUStatCollection
 
 
 '''

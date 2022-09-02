@@ -37,6 +37,7 @@ class GPUStat(object):
     def __getitem__(self, key):
         return self.entry[key]
 
+    # Python内置的@property装饰器就是负责把一个方法变成属性调用的：
     @property
     def index(self):
         """  Returns the index of GPU (as in nvidia-smi).  """
@@ -106,18 +107,12 @@ class GPUStat(object):
 
     @property
     def power_limit(self):
-        """
-        Returns the (enforced) GPU power limit in Watts,
-        or None if the information is not available.
-        """
         v = self.entry['enforced.power.limit']
         return int(v) if v is not None else None
 
     @property
     def processes(self):
-        """
-        Get the list of running processes on the GPU.
-        """
+        """  Get the list of running processes on the GPU.  """
         return self.entry['processes']
 
     def print_to(self,

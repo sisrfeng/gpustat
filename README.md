@@ -78,26 +78,7 @@ Options:
         `export CUDA_DEVICE_ORDER=PCI_BUS_ID`.
 
 
-Quick Installation
-------------------
-
-Install from [PyPI][pypi_gpustat]:
-
-```
-pip install gpustat
-```
-
-If you don't have root privilege, please try to install on user namespace: `pip install --user gpustat`.
-
-To install the latest version (master branch) via pip:
-
-```
-pip install git+https://github.com/wookayin/gpustat.git@master
-```
-
-Note that starting from v1.0, gpustat will support [only Python 3.4+][gh-issue-66].
-For older versions (python 2.7, <3.4), you can continue using gpustat v0.x.
-
+Starting from v1.0, gpustat will support [only Python 3.4+][gh-issue-66]. 
 
 [pypi_gpustat]: https://pypi.python.org/pypi/gpustat
 [gh-issue-10]: https://github.com/wookayin/gpustat/issues/10
@@ -116,11 +97,6 @@ Default display
 - `96 %`: Utilization
 - `11848 / 12287 MB`: GPU Memory Usage
 - `python/...`: Running processes on GPU (and their memory usage)
-
-Changelog
----------
-
-See [CHANGELOG.md](CHANGELOG.md)
 
 
 License
