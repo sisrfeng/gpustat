@@ -246,7 +246,7 @@ class TestGPUStat(unittest.TestCase):
         print("uuid : %s" % g.uuid)
         print("name : %s" % g.name)
         print("memory : used %d total %d avail %d" % (
-            g.memory_used, g.memory_total, g.memory_available))
+            g.memory_used, g.memory_total, g.memory_free))
         print("temperature : %d" % (g.temperature))
         print("utilization : %s" % (g.utilization))
 

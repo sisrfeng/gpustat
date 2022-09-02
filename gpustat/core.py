@@ -1,17 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-Implementation of gpustat
-
-@author Jongwook Choi
-@url https://github.com/wookayin/gpustat
-"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import json
 import locale
 import os.path
@@ -50,55 +39,34 @@ class GPUStat(object):
 
     @property
     def index(self):
-        """
-        Returns the index of GPU (as in nvidia-smi).
-        """
+        """  Returns the index of GPU (as in nvidia-smi).  """
         return self.entry['index']
 
     @property
     def uuid(self):
-        """
-        Returns the uuid returned by nvidia-smi,
+        """  Returns the uuid returned by nvidia-smi,
         e.g. GPU-12345678-abcd-abcd-uuid-123456abcdef
         """
         return self.entry['uuid']
 
     @property
     def name(self):
-        """
-        Returns the name of GPU card (e.g. Geforce Titan X)
-        """
+        """  Returns the name of GPU card (e.g. Geforce Titan X)  """
         return self.entry['name']
 
     @property
     def memory_total(self):
-        """
-        Returns the total memory (in GB) as an integer.
-        """
+        """  Returns the total memory (in GB) as an integer.  """
         return int(self.entry['memory.total'])
 
     @property
     def memory_used(self):
-        """
-        Returns the occupied memory (in GB) as an integer.
-        """
         return int(self.entry['memory.used'])
 
     @property
     def memory_free(self):
-        """
-        Returns the free (available) memory (in GB) as an integer.
-        """
         v = self.memory_total - self.memory_used
         return max(v, 0)
-
-    @property
-    def memory_available(self):
-        """
-        Returns the available memory (in GB) as an integer.
-        Alias of memory_free.
-        """
-        return self.memory_free
 
     @property
     def temperature(self):
@@ -128,7 +96,7 @@ class GPUStat(object):
         return int(v) if v is not None else None
 
     @property
-    def power_draw(self):
+    def power_used(self):
         """
         Returns the GPU power usage in Watts,
         or None if the information is not available.
@@ -152,17 +120,18 @@ class GPUStat(object):
         """
         return self.entry['processes']
 
-    def print_to(self, fp,
-                 with_colors=True,    # deprecated arg
-                 show_cmd=False,
-                 show_user=False,
-                 your_name='',
-                 show_pid=False,
-                 show_power=None,
-                 show_fan_speed=None,
-                 gpuname_width=16,
-                 term=Terminal(),
-                 ):
+    def print_to(self,
+                 fp                          ,  # "fp" stands for "file pointer" and it was a pointer to a FILE structure in C
+                 with_colors    = True       ,  # deprecated arg
+                 show_cmd       = False      ,
+                 show_user      = False      ,
+                 your_name      = ''         ,
+                 show_pid       = False      ,
+                 show_power     = None       ,
+                 show_fan_speed = None       ,
+                 gpuName_width  = 16         ,
+                 term           = Terminal() ,
+                ):
         # color settings
         colors = {}
 
@@ -173,24 +142,26 @@ class GPUStat(object):
             except Exception:
                 return error_value
 
-        colors['C0'] = term.normal
-        colors['C1'] = term.cyan
-        colors['CName'] = term.blue
-        colors['CTemp'] = _conditional(lambda: self.temperature < 50,
-                                       term.red, term.bold_red)
-        colors['FSpeed'] = _conditional(lambda: self.fan_speed < 30,
-                                        term.cyan, term.bold_cyan)
-        colors['CMemU'] = term.bold_yellow
-        colors['CMemT'] = term.yellow
-        colors['CMemP'] = term.yellow
-        colors['CUser'] = term.bold_black   # gray
-        colors['CUtil'] = _conditional(lambda: self.utilization < 30,
+        colors['color_normal'] = term.normal
+        colors['color_hi'] = term.cyan
+
+
+        colors['FSpeed'] = _conditional(  lambda: self.fan_speed < 30,
+                                        term.cyan,
+                                        term.bold_cyan,
+                                       )
+
+        colors['color_MemU'] = term.bold_yellow
+        colors['color_MemT'] = term.yellow
+        colors['color_MemP'] = term.yellow
+        colors['color_User'] = term.bold_black   # gray
+        colors['color_Util'] = _conditional(lambda: self.utilization < 30,
                                        term.green, term.bold_green)
-        colors['CPowU'] = _conditional(
-            lambda: float(self.power_draw) / self.power_limit < 0.4,
+        colors['color_PowU'] = _conditional(
+            lambda: float(self.power_used) / self.power_limit < 0.4,
             term.magenta, term.bold_magenta
         )
-        colors['CPowL'] = term.magenta
+        colors['color_PowL'] = term.magenta
 
         if not with_colors:
             for k in list(colors.keys()):
@@ -202,37 +173,38 @@ class GPUStat(object):
         # build one-line display information
         # we want power use optional, but if deserves being grouped with
         # temperature and utilization
-        reps = "%(C1)s[{entry[index]}]%(C0)s"
-        #  reps = "%(C1)s[{entry[index]}]%(C0)s " \
-        #      "%(CName)s{entry[name]:{gpuname_width}}%(C0)s |" \
-        #      "%(CTemp)s{entry[temperature.gpu]:>3}'C%(C0)s, "
+        reps = "%(color_hi)s[{entry[index]}]%(color_normal)s"
+        #  reps = "%(color_hi)s[{entry[index]}]%(color_normal)s " \
+        #      "%(color_hi)s{entry[name]:{gpuName_width}}%(color_normal)s |" \
+        #      "%(color_hi)s{entry[temperature.gpu]:>3}'C%(color_normal)s, "
 
 
         if show_fan_speed:
-            reps += "%(FSpeed)s{entry[fan.speed]:>3} %%%(C0)s, "
+            reps += "%(FSpeed)s{entry[fan.speed]:>3} %%%(color_normal)s, "
 
-        #  reps += "%(CUtil)s{entry[utilization.gpu]:>3} %%%(C0)s"
+        #  reps += "%(color_Util)s{entry[utilization.gpu]:>3} %%%(color_normal)s"
 
         if show_power:
-            reps += ",  %(CPowU)s{entry[power.draw]:>3}%(C0)s "
+            reps += ",  %(color_PowU)s{entry[power.draw]:>3}%(color_normal)s "
             if show_power is True or 'limit' in show_power:
-                reps += "/ %(CPowL)s{entry[enforced.power.limit]:>3}%(C0)s "
-                reps += "%(CPowL)sW%(C0)s"
+                reps += "/ %(color_PowL)s{entry[enforced.power.limit]:>3}%(color_normal)s "
+                reps += "%(color_PowL)sW%(color_normal)s"
             else:
-                reps += "%(CPowU)sW%(C0)s"
+                reps += "%(color_PowU)sW%(color_normal)s"
 
-        #reps += " | %(C1)s%(CMemU)s{entry[memory.used]:>5}%(C0)s " \
-            #  "/ %(CMemT)s{entry[memory.total]:>5}%(C0)s "
-        reps += "%(C1)s%(CMemU)s{entry[memory.free]:>5}%(C0)s G"
+        #reps += " | %(color_hi)s%(color_MemU)s{entry[memory.used]:>5}%(color_normal)s " \
+            #  "/ %(color_MemT)s{entry[memory.total]:>5}%(color_normal)s "
+        reps += f"%(color_hi)s%(color_MemU)s{entry[memory.free]:>5}%(color_normal)s G"
+        # reps += "%(color_hi)s%(color_MemU)s{entry[memory.free]:>5}%(color_normal)s G"
         reps = (reps) % colors
         reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()},
-                           gpuname_width=gpuname_width)
+                           gpuName_width=gpuName_width)
         reps += " | "
         def process_repr(p):  #  这是个递归函数
             r = ''
 
             if not show_cmd or show_user:
-                r += "{CUser}{:8s}:{C0}".format( _repr(p['username'], '--'), **colors )
+                r += "{color_User}{:8s}:{color_normal}".format( _repr(p['username'], '--'), **colors )
                               #  s前的数字: 字符串长度, 小于这个数就补空格
                               #  太小的话, 行与行之间容易对不齐
                               #  有的用户名:xxx2019,  7位
@@ -240,12 +212,12 @@ class GPUStat(object):
             if show_cmd:
                 if r:
                     r += ':'
-                r += "{C1}{}{C0}".format( _repr(p.get('command', p['pid']), '--'), **colors)
+                r += "{color_hi}{}{color_normal}".format( _repr(p.get('command', p['pid']), '--'), **colors)
 
             if show_pid:
                 r += ("[%s]" % _repr(p['pid'], '--'))
 
-            r += '{CMemP}{:5.1f}G{C0}'.format( _repr(p['gpu_memory_usage'], '?'), **colors)
+            r += '{color_MemP}{:5.1f}G{color_normal}'.format( _repr(p['gpu_memory_usage'], '?'), **colors)
             return r
 
         processes = self.entry['processes']
@@ -433,64 +405,70 @@ class GPUStatCollection(object):
         s += '\n])'
         return s
 
-    # --- Printing Functions ---
-    def print_formatted(self, fp=sys.stdout, force_color=False, no_color=False,
-                        show_cmd=False, show_user=False,
-                        your_name='',
-                        show_pid=False,
-                        show_power=None, show_fan_speed=None, gpuname_width=16,
-                        show_header=True,
-                        eol_char=os.linesep,
-                        ):
-        # ANSI color configuration
-        if force_color and no_color:
-            raise ValueError("--color and --no_color can't"
-                             " be used at the same time")
+    def print_formatted(self,
+                        fp             = sys.stdout ,
+                        force_color    = False      ,
+                        no_color       = False      ,
+                        show_cmd       = False      ,
+                        show_user      = False      ,
+                        your_name      = ''         ,
+                        show_pid       = False      ,
+                        show_power     = None       ,
+                        show_fan_speed = None       ,
+                        gpuName_width  = 16         ,
+                        show_header    = True       ,
+                        eol_char       = os.linesep ,
+                       ):
+        if 'ANSI color configuration' :
+            if force_color and no_color:
+                raise ValueError("--color and --no_color can't be used at the same time" )
 
-        if force_color:
-            t_color = Terminal(kind='linux', force_styling=True)
+            if force_color:
+                t_color = Terminal(kind='linux', force_styling=True)
 
-            # workaround of issue #32 (watch doesn't recognize sgr0 characters)
-            t_color.normal = u'\x1b[0;10m'
-        elif no_color:
-            t_color = Terminal(force_styling=None)
-        else:
-            t_color = Terminal()   # auto, depending on isatty
+                # workaround of issue #32 (watch doesn't recognize sgr0 characters)
+                t_color.normal = u'\x1b[0;10m'
+
+            elif no_color:
+                t_color = Terminal(force_styling=None)
+
+            else:
+                t_color = Terminal()   # auto, depending on isatty
 
         # appearance settings
-        entry_name_width = [len(g.entry['name']) for g in self]
-        gpuname_width = max([gpuname_width or 0] + entry_name_width)
+        entry_name_width = [ len(gpu.entry['name']) for gpu in self ]
+        gpuName_width    = max( entry_name_width + [ gpuName_width or 0 ]  )
+                                                   # [ False or 666 ] 为 666
+                                                   # [ True or 666 ] 为 [ True ]
 
-        # header
         if show_header:
             time_format = locale.nl_langinfo(locale.D_T_FMT)
 
             header_template = '{t.bold_white}{hostname:{width}}{t.normal}  '
-            header_template += '{timestr}  '
+            header_template += '{timeStr}  '
             header_template += '{t.bold_black}{driver_version}{t.normal}'
 
-            header_msg = header_template.format(
-                    hostname=self.hostname,
-                    width=gpuname_width + 3,  # len("[?]")
-                    timestr=self.query_time.strftime(time_format),
-                    driver_version=self.driver_version,
-                    t=t_color,
-                )
+            header_msg = header_template.format(hostname       = self.hostname                         ,
+                                                width          = gpuName_width + 3                     ,
+                                                timeStr        = self.query_time.strftime(time_format) ,
+                                                driver_version = self.driver_version                   ,
+                                                t              = t_color                               ,
+                                               )
 
             fp.write(header_msg.strip())
             fp.write(eol_char)
 
-        # body  某gpu是一个g
-        for g in self:
-            g.print_to(fp,
-                       show_cmd=show_cmd,
-                       show_user=show_user,
-                       your_name=your_name,
-                       show_pid=show_pid,
-                       show_power=show_power,
-                       show_fan_speed=show_fan_speed,
-                       gpuname_width=gpuname_width,
-                       term=t_color)
+        for gpu in self:
+            gpu.print_to(fp,
+                         show_cmd       = show_cmd       ,
+                         show_user      = show_user      ,
+                         your_name      = your_name      ,
+                         show_pid       = show_pid       ,
+                         show_power     = show_power     ,
+                         show_fan_speed = show_fan_speed ,
+                         gpuName_width  = gpuName_width  ,
+                         term           = t_color        ,
+                        )
             fp.write(eol_char)
 
         fp.flush()
@@ -499,7 +477,7 @@ class GPUStatCollection(object):
         return {
             'hostname': self.hostname,
             'query_time': self.query_time,
-            "gpus": [g.jsonify() for g in self]
+            "gpus": [gpu.jsonify() for gpu in self]
         }
 
     def print_json(self, fp=sys.stdout):
@@ -510,8 +488,7 @@ class GPUStatCollection(object):
                 raise TypeError(type(obj))
 
         o = self.jsonify()
-        json.dump(o, fp, indent=4, separators=(',', ': '),
-                  default=date_handler)
+        json.dump( o, fp, indent=4, separators=(',', ': '), default=date_handler )
         fp.write('\n')
         fp.flush()
 
