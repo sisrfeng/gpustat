@@ -9,7 +9,7 @@
 
 
 
-# if 'importS':
+if 'importS':
     import sys
     import time
 
@@ -21,9 +21,7 @@
 
 
 def print_gpustat(json=False, debug=False, **kwargs):
-    '''
-    Display the GPU query results into standard output.
-    '''
+    '''  Display the GPU query results into standard output.  '''
     try:
         gpu_stats = GPUStatCollection.new_query()
     except Exception as e:
@@ -77,8 +75,8 @@ def main(*argv):
     parser = argparse.ArgumentParser()
 
     parser_color = parser.add_mutually_exclusive_group()
-    parser_color.add_argument( '--force-color', '--color', action='store_true', help='Force to output with colors' )
-    parser_color.add_argument( '--no-color', action='store_true', help='Suppress colored output' )
+    parser_color.add_argument( '--no-color', action='store_true')
+    parser_color.add_argument( '--force-color', '--color', action='store_true')
 
     parser.add_argument('-c', '--show-cmd', action='store_true',
                         help='Display cmd name of running process')
@@ -117,7 +115,7 @@ def main(*argv):
         help='Suppress header message'
     )
     parser.add_argument(
-        '--gpuname-width', type=int, default=16,
+        '--gpuName-width', type=int, default=16,
         help='The minimum column width of GPU names, defaults to 16'
     )
     parser.add_argument(

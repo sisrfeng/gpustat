@@ -165,13 +165,21 @@ class GPUStat(object):
         def _repr(v, none_value='??'):
             return none_value if v is None else v
 
-        # build one-line display information
-        # we want power use optional, but if deserves being grouped with
-        # temperature and utilization
+        # ---build one-line display information---
+
         reps = "%(color_hi)s[{entry[index]}]%(color_normal)s"
-        #  reps = "%(color_hi)s[{entry[index]}]%(color_normal)s " \
-        #      "%(color_hi)s{entry[name]:{gpuName_width}}%(color_normal)s |" \
-        #      "%(color_hi)s{entry[temperature.gpu]:>3}'C%(color_normal)s, "
+        # 下面有:  reps = (reps) % colors
+          #         # reps里有%(color_XXX)%s, 给colors插槽
+        #         # 改成f-string反而不好
+
+            # 暂时不需要:
+            # we want power usage  optional,
+                # but if deserves,
+                # being grouped with  temperature and utilization
+
+            #  reps = "%(color_hi)s[{entry[index]}]%(color_normal)s " \
+            #      "%(color_hi)s{entry[name]:{gpuName_width}}%(color_normal)s |" \
+            #      "%(color_hi)s{entry[temperature.gpu]:>3}'C%(color_normal)s, "
 
 
         if show_fan_speed:
@@ -187,13 +195,21 @@ class GPUStat(object):
             else:
                 reps += "%(color_PowU)sW%(color_normal)s"
 
-        #reps += " | %(color_hi)s%(color_MemU)s{entry[memory.used]:>5}%(color_normal)s " \
-            #  "/ %(color_MemT)s{entry[memory.total]:>5}%(color_normal)s "
-        reps += f"%(color_hi)s%(color_MemU)s{entry[memory.free]:>5}%(color_normal)s G"
-        # reps += "%(color_hi)s%(color_MemU)s{entry[memory.free]:>5}%(color_normal)s G"
+        reps += "%(color_hi)s%(color_MemU)s{entry[memory.free]:>5}%(color_normal)s G"
+            # 不行::
+                # reps += f"{color_hi}{color_MemU}{entry[memory.free]:>5}{color_normal} G"
+            # 啰嗦:
+                #reps += " | %(color_hi)s%(color_MemU)s{entry[memory.used]:>5}%(color_normal)s " \
+                    #  "/ %(color_MemT)s{entry[memory.total]:>5}%(color_normal)s "
         reps = (reps) % colors
-        reps = reps.format(entry={k: _repr(v) for k, v in self.entry.items()},
-                           gpuName_width=gpuName_width)
+                # reps里有%(color_XXX)%s, 给colors插槽
+                # 改成f-string反而不好
+        # print(f'{colors= }')  # 丑八怪的ANSI escape colors (是这么叫?)
+        # print(f'{reps= }')
+
+        reps = reps.format(entry = {k: _repr(v) for k, v in self.entry.items()},
+                           gpuName_width = gpuName_width,
+                          )
         reps += " | "
         def process_repr(p):  #  这是个递归函数
             r = ''
@@ -349,19 +365,30 @@ class GPUStatCollection(object):
 
             index = N.nvmlDeviceGetIndex(handle)
             gpu_info = {
-                'index': index,
-                'uuid': uuid,
-                'name': name,
-                'temperature.gpu': temperature,
-                'fan.speed': fan_speed,
-                'utilization.gpu': utilization.gpu if utilization else None,
-                'power.draw': power // 1000 if power is not None else None,
-                'enforced.power.limit': power_limit // 1000 if power_limit is not None else None,
+                'index'                : index       ,
+                'uuid'                 : uuid        ,
+                'name'                 : name        ,
+                'temperature.gpu'      : temperature ,
+                'fan.speed'            : fan_speed   ,
+                'utilization.gpu'      : utilization.gpu \
+                                            if utilization \
+                                            else  \
+                                       None,
+
+                'power.draw'           : power // 1000 if power is not None else None,
+
+                'enforced.power.limit' : power_limit // 1000 if power_limit is not None else None,
                 # Convert bytes into MBytes
-                'memory.used': memory.used / GB if memory else None,
-                'memory.total': memory.total / GB if memory else None,
-                'memory.free': round(max(0,(memory.total - memory.used)) / GB, 1) if memory else None,
-                'processes': processes,
+                'memory.used'          : memory.used / GB \
+                                            if memory \
+                                            else  \
+                                        None,
+
+                'memory.total'         : memory.total / GB if memory else None,
+
+                'memory.free'          : round(max(0,(memory.total - memory.used)) / GB, 1) if memory else None,
+
+                'processes'            : processes,
             }
 
             return gpu_info
@@ -402,7 +429,7 @@ class GPUStatCollection(object):
 
     def print_formatted(self,
                         fp             = sys.stdout ,
-                        force_color    = False      ,
+                        force_color      = False      ,
                         no_color       = False      ,
                         show_cmd       = False      ,
                         show_user      = False      ,
@@ -416,7 +443,7 @@ class GPUStatCollection(object):
                        ):
         if 'ANSI color configuration' :
             if force_color and no_color:
-                raise ValueError("--color and --no_color can't be used at the same time" )
+                raise ValueError("--color(--force-color) and --no_color can't be used at the same time" )
 
             if force_color:
                 t_color = Terminal(kind='linux', force_styling=True)
