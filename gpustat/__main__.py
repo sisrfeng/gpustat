@@ -1,3 +1,13 @@
+# #调用关系：
+    # #main里的 gpu_stats调用core.py的print_formatted(sys.stdout, **kwargs)
+    #
+    # for g in 所有gpu:
+    #     reps=''
+    #     显示显存情况
+    #     for p in processes:
+    #         reps +=  process_repr(p) + '| '
+
+
 
 # if 'importS':
     import sys
@@ -8,18 +18,6 @@
     from gpustat import __version__
     from psutil import Process
     from .core import GPUStatCollection
-
-
-'''
-#调用关系：
-#main里的 gpu_stats调用core.py的print_formatted(sys.stdout, **kwargs)
-
-for g in 所有gpu:
-    reps=''
-    显示显存情况
-    for p in processes:
-        reps +=  process_repr(p) + '| '
-'''
 
 
 def print_gpustat(json=False, debug=False, **kwargs):
