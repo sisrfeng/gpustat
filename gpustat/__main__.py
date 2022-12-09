@@ -122,6 +122,10 @@ def main(*argv):
         '--debug', action='store_true', default=False,
         help='Allow to print additional informations for debugging.'
     )
+    parser.add_argument(
+        '--no_gdm', action='store_true', default=False,
+        help='do not show gdm(GNOME Display Manager) related information, because it usually show 0.0G, for deep learning users. '
+    )
 
     args = parser.parse_args(argv[1:])
 

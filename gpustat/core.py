@@ -126,6 +126,7 @@ class GPUStat(object):
                  show_fan_speed = None       ,
                  gpuName_width  = 16         ,
                  term           = Terminal() ,
+                 no_gdm         = False      ,
                 ):
         # color settings
         colors = {}
@@ -238,7 +239,13 @@ class GPUStat(object):
         else:
             if your_name == '':
                 for p in processes:
-                    reps +=  process_repr(p) + ' | '
+                    # reps +=  process_repr(p) + ' | '
+                    if no_gdm :
+                        if  _repr(p['username'], '--') != "gdm":
+                            reps +=  process_repr(p) + ' | '
+                    else:
+                        reps +=  process_repr(p) + ' | '
+
             if your_name != '':
                 for p in processes:
                     #only show process of user 'YOUR_NAME'
@@ -440,6 +447,7 @@ class GPUStatCollection(object):
                         gpuName_width  = 16         ,
                         show_header    = True       ,
                         eol_char       = os.linesep ,
+                        no_gdm         = False      ,
                        ):
         if 'ANSI color configuration' :
             if force_color and no_color:
@@ -490,6 +498,7 @@ class GPUStatCollection(object):
                          show_fan_speed = show_fan_speed ,
                          gpuName_width  = gpuName_width  ,
                          term           = t_color        ,
+                         no_gdm         = no_gdm         ,
                         )
             fp.write(eol_char)
 
