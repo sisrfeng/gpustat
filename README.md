@@ -1,3 +1,13 @@
+# Update
+
+1.  My fork's name was n_gpu, but I find that if we want to uninstall it , we should use `pip uninstall
+gpustat`, so the n_gpu is missing. So switch back to gpustat. 
+
+2.  For better experience for Chinese users, I mainly focus on  https://gitee.com/llwwff/gpustat
+    instead of github' s repo
+
+---  
+
 n_gpu: number of available gpu / new gpu command, do not use the ugly nvidia-smi anymore.
 
 # Install
